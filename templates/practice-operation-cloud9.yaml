@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: trraining-environoment-cloud9
+
+Parameters:
+  Cloud9Name:
+    Type: String
+    
+  
+  SubnetID: # インターネットゲートウェイのルートが設定されてあるサブネットIDを入力してください
+    Type: String
+    Description: Enter the subnet ID with Internet gateway root configured
+
+Resources:
+# ---------------------------------------------------------
+# Cloud9 作成
+# ---------------------------------------------------------
+  MyCloud9Environment:
+    Type: AWS::Cloud9::EnvironmentEC2
+    Properties:
+      Name: !Ref Cloud9Name
+      Description: My Cloud9 Environment
+      InstanceType: t3.small
+      AutomaticStopTimeMinutes: 30 # Set the desired auto-stop time
+      ConnectionType: CONNECT_SSH
+      SubnetId: !Ref SubnetID # Specify the subnet where Cloud9 should be launched
