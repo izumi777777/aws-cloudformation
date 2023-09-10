@@ -4,13 +4,79 @@ Description: trraining-environoment-cloud9
 Parameters:
   Cloud9Name:
     Type: String
-    
   
-  SubnetID: # インターネットゲートウェイのルートが設定されてあるサブネットIDを入力してください
+  VPCCIDR:
     Type: String
-    Description: Enter the subnet ID with Internet gateway root configured
+    Default: 10.0.0.0/16
 
+  PublicSubnet1Cidr:
+    Type: String
+    Default: 10.0.10.0/24
+  
 Resources:
+# ---------------------------------------------------------
+# VPC 作成
+# ---------------------------------------------------------
+  Cloud9EnvironmentVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+         CidrBlock: !Ref VPCCIDR
+         EnableDnsSupport: true
+         EnableDnsHostnames: true
+        #  Tags:
+        #   - key: Name
+        #     value: cloud9-enviroment-vpc
+
+# ---------------------------------------------------------
+# PublicSubnetの作成テンプレート
+# ---------------------------------------------------------
+  Cloud9PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+         AvailabilityZone: ap-northeast-1a
+         CidrBlock: !Ref PublicSubnet1Cidr
+         VpcId:
+           Ref: Cloud9EnvironmentVpc
+
+# ---------------------------------------------------------
+# InternetGatewayの作成テンプレート
+# ---------------------------------------------------------
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+         VpcId: !Ref Cloud9EnvironmentVpc
+         InternetGatewayId: !Ref InternetGateway
+
+# ---------------------------------------------------------
+# PublicRouteTable1の作成テンプレート
+# ---------------------------------------------------------
+  PublicRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+         VpcId: !Ref Cloud9EnvironmentVpc
+
+# ---------------------------------------------------------
+# PublicRouteTable1の関連付けテンプレート
+# ---------------------------------------------------------
+  PublicSubnet1AssociateRouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:  !Ref PublicRouteTable1
+      SubnetId: !Ref Cloud9PublicSubnet1
+
+# ---------------------------------------------------------
+# IGWルートの作成テンプレート
+# ---------------------------------------------------------
+  PublicInternetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway     
+
 # ---------------------------------------------------------
 # Cloud9 作成
 # ---------------------------------------------------------
@@ -22,4 +88,4 @@ Resources:
       InstanceType: t3.small
       AutomaticStopTimeMinutes: 30 # Set the desired auto-stop time
       ConnectionType: CONNECT_SSH
-      SubnetId: !Ref SubnetID # Specify the subnet where Cloud9 should be launched
+      SubnetId: !Ref Cloud9PublicSubnet1
